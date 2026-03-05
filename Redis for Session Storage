@@ -1,0 +1,283 @@
+# Redis for Session Storage
+
+---
+
+## 1. What is Session Storage?
+
+Session storage is a mechanism used by web applications to store information about a user while they are interacting with a website.
+
+When a user logs in to a website, the server creates a **session** that keeps track of the user’s identity and activity.
+
+Instead of asking the user to log in again on every page request, the server checks the session.
+
+Typical session data includes:
+
+* User ID
+* Login status
+* Shopping cart items
+* User preferences
+
+---
+
+## 2. Problem Without Session Storage
+
+HTTP is a **stateless protocol**.
+
+This means each request is independent.
+
+Example:
+
+1. User logs in
+2. Server verifies credentials
+3. User opens another page
+
+Without sessions, the server would not remember the user.
+
+So the user would need to log in again.
+
+Session storage solves this problem.
+
+---
+
+## 3. Why Redis is Used for Session Storage
+
+Redis is widely used for storing sessions because it is:
+
+| Feature             | Explanation                                      |
+| ------------------- | ------------------------------------------------ |
+| In‑Memory Storage   | Data is stored in RAM, making it extremely fast  |
+| Key‑Value Structure | Sessions can easily be stored as key‑value pairs |
+| Expiration Support  | Sessions can automatically expire                |
+| Scalability         | Works well in distributed systems                |
+| High Performance    | Handles millions of requests per second          |
+
+---
+
+## 4. How Redis Session Storage Works
+
+Basic flow:
+
+1. User logs in
+2. Server generates a **Session ID**
+3. Session data is stored in Redis
+4. Session ID is sent to the user via cookies
+5. Every request sends the Session ID
+6. Server retrieves session data from Redis
+
+---
+
+## 5. Architecture Diagram
+
+User Browser → Web Server → Redis
+
+1. Browser stores Session ID in cookie
+2. Server fetches session data from Redis
+3. Redis returns session information
+
+---
+
+## 6. Session Storage Example
+
+Example session data:
+
+```
+Key: session:abc123
+
+Value:
+{
+  "user_id": 1001,
+  "username": "john",
+  "role": "admin",
+  "login_time": "2026-03-05"
+}
+```
+
+---
+
+## 7. Storing Sessions in Redis
+
+Example using Redis CLI:
+
+```
+SET session:abc123 "{user_id:1001,username:'john'}"
+```
+
+Setting expiration time (example: 30 minutes):
+
+```
+SETEX session:abc123 1800 "{user_id:1001,username:'john'}"
+```
+
+---
+
+## 8. Retrieving Session
+
+```
+GET session:abc123
+```
+
+Output:
+
+```
+{user_id:1001,username:'john'}
+```
+
+---
+
+## 9. Deleting Session (Logout)
+
+When the user logs out:
+
+```
+DEL session:abc123
+```
+
+This removes the session from Redis.
+
+---
+
+## 10. Example Workflow
+
+Step 1: User Login
+
+User sends:
+
+```
+POST /login
+```
+
+Server verifies credentials.
+
+Step 2: Create Session
+
+Server creates:
+
+```
+session_id = abc123
+```
+
+Store session in Redis.
+
+Step 3: Send Cookie
+
+Server sends cookie to browser:
+
+```
+Set-Cookie: session_id=abc123
+```
+
+Step 4: User Request
+
+Browser sends:
+
+```
+GET /dashboard
+Cookie: session_id=abc123
+```
+
+Server retrieves session from Redis.
+
+---
+
+## 11. Example Using Python (Flask + Redis)
+
+Install dependencies:
+
+```
+pip install flask redis
+```
+
+Example code:
+
+```python
+from flask import Flask, request, session
+import redis
+
+app = Flask(__name__)
+
+r = redis.Redis(host='localhost', port=6379, db=0)
+
+@app.route('/login')
+def login():
+
+    session_id = "abc123"
+
+    r.setex(f"session:{session_id}", 1800, "user_id:1001")
+
+    return "User logged in"
+
+@app.route('/dashboard')
+def dashboard():
+
+    session_id = request.cookies.get("session_id")
+
+    user = r.get(f"session:{session_id}")
+
+    return f"User session data: {user}"
+
+if __name__ == '__main__':
+    app.run()
+```
+
+---
+
+## 12. Advantages of Redis Session Storage
+
+| Advantage   | Description                  |
+| ----------- | ---------------------------- |
+| Fast        | RAM based storage            |
+| Scalable    | Supports distributed systems |
+| Expiration  | Automatic session timeout    |
+| Centralized | Works with multiple servers  |
+| Reliable    | Supports persistence options |
+
+---
+
+## 13. Redis vs Traditional Session Storage
+
+| Feature              | Redis     | Local Server Session |
+| -------------------- | --------- | -------------------- |
+| Speed                | Very Fast | Slower               |
+| Scalability          | High      | Limited              |
+| Multi Server Support | Yes       | Difficult            |
+| Expiration           | Built‑in  | Manual               |
+
+---
+
+## 14. Real‑World Use Cases
+
+Redis sessions are used by:
+
+* E‑commerce websites
+* Banking applications
+* Social media platforms
+* Online learning platforms
+
+Examples:
+
+* Shopping cart sessions
+* Logged‑in user tracking
+* Authentication state
+
+---
+
+## 15. Best Practices
+
+1. Always set expiration time for sessions
+2. Use a secure session ID
+3. Use Redis clustering for large systems
+4. Monitor Redis memory usage
+
+---
+
+## 16. Summary
+
+Redis is one of the best tools for storing user sessions in modern web applications.
+
+Because Redis is **fast, scalable, and supports automatic expiration**, it is widely used in production systems.
+
+Using Redis for sessions allows applications to scale across multiple servers while maintaining a consistent user session.
+
+---
+
+**End of Document**
